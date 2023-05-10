@@ -2,12 +2,12 @@
     <div class="game-table">
         <p v-if="winner" class="winner-message waviy">
             <template v-if="winner === 'Tie'">
-                <span v-for="(letter, index) in 'It\'s a tie!'" :key =" index" :style="'--i:' + (index + 1)">
+                <span v-for="(letter, index) in 'It\'s a tie!'" :key="index" :style="'--i:' + (index + 1)">
                     {{ letter }}
                 </span>
             </template>
             <template v-else>
-                <span v-for="( letter, index ) in  (winner + ' wins!') " :key=" index " :style=" '--i:' + (index + 1) ">
+                <span v-for="( letter, index ) in  (winner + ' wins!') " :key="index" :style="'--i:' + (index + 1)">
                     {{ letter }}
                 </span>
             </template>
@@ -16,24 +16,24 @@
             Current Player: {{ players[currentPlayerIndex].name }}
         </div>
         <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
-            <Player v-for="( player, index ) in  players " :key=" index " :player=" player " :playerIndex=" index "
-                @card-clicked=" captureOrPlaceCards " />
+           <Player v-for="( player, index ) in  players " :key=" index " :player=" player " :playerIndex=" index "
+        @card-clicked="captureOrPlaceCards" @card-dragged="handleCardDragged" />
         </transition-group>
         <p>Center Board:</p>
-        <div class="center-cards">
-            <transition-group name="card-fly-in" tag="div" class="card-fly-in-container"
-                >
-                <Card v-for="( card, index ) in  centerCards " :key=" index " :card=" card "
-                    @card-clicked=" captureCardHigherRank " />
+        <div class="center-cards" @dragover.prevent @drop="handleDrop">
+            <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
+                <Card v-for="( card, index ) in  centerCards " :key="index" :card="card"
+                    @card-clicked="captureCardHigherRank" />
             </transition-group>
         </div>
-        <div v-if=" rondaPlayer " class="waviy">
-            <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key=" index " :style=" { '--i': index + 1 } ">
+        <div v-if="rondaPlayer" class="waviy">
+            <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key="index"
+                :style="{ '--i': index + 1 }">
                 {{ letter }}
             </span>
         </div>
-        <button @click=" endTurn " class="end-turn-button">End Turn</button>
-        <button @click=" startGame ">Start Game</button>
+        <button @click="endTurn" class="end-turn-button">End Turn</button>
+        <button @click="startGame">Start Game</button>
     </div>
 </template>
   
@@ -73,6 +73,8 @@ export default {
             targetIndexForCardAnim: 0,
             cardIdForAnim: '',
             rondaPlayer: null,
+            draggedCard: null,
+            draggedPlayer: null,
         };
     },
     methods: {
@@ -121,6 +123,17 @@ export default {
                 }
             }
         },
+        handleCardDragged(card, player) {
+            this.draggedCard = card;
+            this.draggedPlayer = player;
+        },
+        handleDrop(event) {
+            event.preventDefault();
+            this.captureOrPlaceCards(this.draggedCard, this.draggedPlayer);
+            this.draggedCard = null;
+            this.draggedPlayer = null;
+        },
+
         checkCenterCardsValidity(cards) {
             const ranks = cards.map(card => this.convertToNumericValue(card.value)).sort((a, b) => a - b);
 

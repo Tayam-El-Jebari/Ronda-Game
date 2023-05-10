@@ -4,8 +4,8 @@
         <div class="player-cards-box">
             <div class="player-cards">
                 <transition-group name="player-card-fly-in" tag="div" class="player-cards">
-                    <Card v-for="(card, index) in player.cards" :key="index" :card="card"
-                        @card-clicked="handleCardClicked" />
+                    <Card v-for="(card, index) in player.cards" :key="index" :card="card" @card-clicked="handleCardClicked"
+                        draggable="true" @dragstart="handleDragStart($event, card, player)"  @dragend="handleCardDragEnd" />
                 </transition-group>
 
             </div>
@@ -39,6 +39,10 @@ export default {
         handleCardClicked(card) {
             this.$emit('card-clicked', card, this.player);
         },
+        handleDragStart(event, card, player) {
+            event.dataTransfer.effectAllowed = "move";
+            this.$emit('card-dragged', card, player);
+        },
     },
 };
 </script>
@@ -48,9 +52,11 @@ export default {
     display: inline-block;
     margin-left: 10px;
 }
-.player-cards-box{
-    width:240px;
+
+.player-cards-box {
+    width: 240px;
 }
+
 .player-cards {
     position: relative;
     height: 120px;
@@ -77,9 +83,11 @@ export default {
 .player-cards:hover>*:nth-child(1) {
     transform: translate(-80%) rotate(-20deg);
 }
+
 .player-cards:hover>*:nth-child(2) {
     transform: translate(0) rotate(20deg);
 }
+
 .player-cards:hover>*:nth-child(3) {
     transform: translate(80%, 35%) rotate(40deg);
 }
