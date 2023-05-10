@@ -1,0 +1,413 @@
+<template>
+    <div class="game-table">
+        <p v-if="winner" class="winner-message waviy">
+            <template v-if="winner === 'Tie'">
+                <span v-for="(letter, index) in 'It\'s a tie!'" :key =" index" :style="'--i:' + (index + 1)">
+                    {{ letter }}
+                </span>
+            </template>
+            <template v-else>
+                <span v-for="( letter, index ) in  (winner + ' wins!') " :key=" index " :style=" '--i:' + (index + 1) ">
+                    {{ letter }}
+                </span>
+            </template>
+        </p>
+        <div class="current-player">
+            Current Player: {{ players[currentPlayerIndex].name }}
+        </div>
+        <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
+            <Player v-for="( player, index ) in  players " :key=" index " :player=" player " :playerIndex=" index "
+                @card-clicked=" captureOrPlaceCards " @leave=" onCardLeave " />
+        </transition-group>
+        <p>Center Board:</p>
+        <div class="center-cards">
+            <transition-group name="card-fly-in" tag="div" class="card-fly-in-container" @leave=" onCardLeave "
+                @after-leave=" onCardAfterLeave ">
+                <Card v-for="( card, index ) in  centerCards " :key=" index " :card=" card "
+                    @card-clicked=" captureCardHigherRank " />
+            </transition-group>
+        </div>
+        <div v-if=" rondaPlayer " class="waviy">
+            <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key=" index " :style=" { '--i': index + 1 } ">
+                {{ letter }}
+            </span>
+        </div>
+        <button @click=" endTurn " class="end-turn-button">End Turn</button>
+        <button @click=" startGame ">Start Game</button>
+    </div>
+</template>
+  
+<script>
+import axios from 'axios';
+import Card from './Card.vue';
+import Player from './Player.vue';
+
+const spanishDeck = [
+    '2S', '3S', '4S', '5S', '6S', '7S', '0S', 'AS', 'JS', 'QS',
+    '2D', '3D', '4D', '5D', '6D', '7D', '0D', 'AD', 'JD', 'QD',
+    '2C', '3C', '4C', '5C', '6C', '7C', '0C', 'AC', 'JC', 'QC',
+    '2H', '3H', '4H', '5H', '6H', '7H', '0H', 'AH', 'JH', 'QH',
+];
+const DECK_API = 'https://deckofcardsapi.com/api/deck';
+
+
+export default {
+    components: {
+        Card,
+        Player,
+    },
+    data() {
+        return {
+            deckId: '',
+            players: [] = [
+                { name: 'Player 1', cards: [], capturedCards: [] },
+                { name: 'Player 2', cards: [], capturedCards: [] },
+            ],
+            centerCards: [],
+            currentPlayerIndex: 0,
+            lastCapturedCard: '',
+            winner: '',
+            remainingCards: 0,
+            debts: [],
+            //used for the animation, this way it's easy to know to which deck a card should go to.
+            targetIndexForCardAnim: 0,
+            cardIdForAnim: '',
+            rondaPlayer: null,
+        };
+    },
+    methods: {
+        async startGame() {
+            await this.createDeck();
+            await this.dealCenterCards()
+            await this.shuffleDeck();
+            await this.dealCards();
+            // Implement game logic, card capturing, and scoring mechanisms
+        },
+        async createDeck() {
+            const response = await axios.get(`${DECK_API}/new/shuffle/?cards=${spanishDeck.join(',')}`);
+            this.deckId = response.data.deck_id;
+        },
+        async shuffleDeck() {
+            await axios.get(`${DECK_API}/${this.deckId}/shuffle/?remaining=true`);
+        },
+        async dealCards() {
+            let response = null;
+            for (let player of this.players) {
+                response = await axios.get(`${DECK_API}/${this.deckId}/draw/?count=3`);
+                player.cards = response.data.cards;
+                const rondaRank = this.checkForRonda(player);
+                if (rondaRank !== null) {
+                    console.log("ronda!")
+                    this.applyRondaLogic(player);
+                }
+            }
+            this.remainingCards = response.data.remaining;
+        },
+        async dealCenterCards() {
+            let isValid = false;
+
+            while (!isValid) {
+                let response = await axios.get(`${DECK_API}/${this.deckId}/draw/?count=4`);
+                let cards = response.data.cards;
+                isValid = this.checkCenterCardsValidity(cards);
+
+                if (isValid) {
+                    this.centerCards = cards;
+                } else {
+                    // Return the drawn cards to the deck
+                    let cardCodes = cards.map(card => card.code).join(',');
+                    await axios.post(`${DECK_API}/${this.deckId}/shuffle/?cards=${spanishDeck.join(',')}`);
+                    await this.shuffleDeck();
+                }
+            }
+        },
+        checkCenterCardsValidity(cards) {
+            const ranks = cards.map(card => this.convertToNumericValue(card.value)).sort((a, b) => a - b);
+
+            // Check if all ranks are different
+            for (let i = 1; i < ranks.length; i++) {
+                if (ranks[i] === ranks[i - 1]) {
+                    return false;
+                }
+            }
+
+            // Check if cards are not in sequence
+            for (let i = 1; i < ranks.length; i++) {
+                if (ranks[i] === ranks[i - 1] + 1) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        captureCardHigherRank(card) {
+            console.log(card);
+            console.log(this.convertToNumericValue(this.lastCapturedCard.value))
+            let lastCapturedValue = this.convertToNumericValue(this.lastCapturedCard.value);
+            //this is done because only cards 1-7 and 10-12 exist. Simple fix for capturing rank 10 when you have a 7
+            if (lastCapturedValue == 7) {
+                lastCapturedValue = 9
+            }
+            if (this.convertToNumericValue(card.value) == (lastCapturedValue + 1)) {
+                console.log("yes");
+                this.handleDebtLogic([card]);
+            }
+        },
+        captureOrPlaceCards(card, player) {
+            if (player !== this.players[this.currentPlayerIndex]) {
+                return;
+            }
+            //if you can end turn, you can't place/capture any new cards
+            if (this.canEndTurn(player)) {
+                return;
+            }
+
+
+            // Check if the clicked card can capture any card(s) from the center
+            const captureCandidates = this.findCaptureCandidates(card);
+
+            // If there are valid captures, update the game state
+            if (captureCandidates.length > 0) {
+
+                const cardsToCapture = [card, ...captureCandidates];
+                this.handleDebtLogic(cardsToCapture);
+
+                // Remove the played card from the player's hand
+                player.cards = player.cards.filter(playerCard => playerCard.code !== card.code);
+            }
+            else {
+                // add card to the center, as it is not able to capture something
+                this.centerCards.push(card);
+                player.cards = player.cards.filter(playerCard => playerCard.code !== card.code);
+            }
+        },
+        hideCard(cardCode) {
+            //this method helps with the animation process being smoother.
+            const cardElement = document.getElementById(cardCode);
+            console.log(cardCode);
+            if (cardElement) {
+                cardElement.style.display = 'none';
+                console.log(cardElement);
+            }
+        },
+        handleDebtLogic(cardsToCapture) {
+            for (let i = 0; i < cardsToCapture.length; i++) {
+                const currentPlayerDebt = this.debts.find(debt => debt.debtor === this.currentPlayerIndex);
+                if (currentPlayerDebt && currentPlayerDebt.amount > 0) {
+                    this.players[currentPlayerDebt.creditor].capturedCards.push(cardsToCapture[i])
+                    currentPlayerDebt.amount--;
+                    this.targetIndexForCardAnim = currentPlayerDebt.creditor;
+                }
+                else {
+                    this.players[this.currentPlayerIndex].capturedCards.push(cardsToCapture[i]);
+                    this.targetIndexForCardAnim = this.currentPlayerIndex;
+                }
+                this.removeCardFromCenter(cardsToCapture[i])
+
+                this.lastCapturedCard = cardsToCapture[i];
+            }
+        },
+        checkForDebt(targetPlayerIndex) {
+            do {
+                targetPlayerIndex = (targetPlayerIndex + 1) % this.players.length;
+                if (this.debts[targetPlayerIndex].amount > 0) {
+                    return true;
+                }
+            } while (targetPlayerIndex !== currentPlayerIndex);
+            return false;
+        },
+        nextTurn() {
+            this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+            //checks if player 1 is out of cards
+            if (this.currentPlayerIndex === 0 && this.players[this.currentPlayerIndex].cards.length === 0) {
+                this.dealCards();
+                this.checkForWinner();
+            }
+        },
+        removeCardFromCenter(cardToRemove) {
+            this.cardIdForAnim = cardToRemove.code;
+            this.centerCards = this.centerCards.filter(card => card.value !== cardToRemove.value);
+        },
+        findCaptureCandidates(card) {
+            return this.centerCards.filter(centerCard => centerCard.value === card.value);
+        },
+        endTurn() {
+            const currentPlayer = this.players[this.currentPlayerIndex];
+
+            if (this.canEndTurn(currentPlayer)) {
+                this.nextTurn();
+                this.lastCapturedCard = '';
+            } else {
+                alert("Current player cannot end turn without capturing a card.");
+            }
+        },
+        checkForWinner() {
+            //change to for loop
+            if (this.remainingCards === 0) {
+                if (this.players[0].capturedCards.length > this.players[1].capturedCards.length) {
+                    this.winner = this.players[0].name;
+                } else if (this.players[0].capturedCards.length < this.players[1].capturedCards.length) {
+                    this.winner = this.players[1].name;
+                } else {
+                    this.winner = 'Tie';
+                }
+            }
+        },
+        canEndTurn(player) {
+            if (player.cards.length === 3) {
+                return false;
+            }
+
+            //checks if current player is last. If so, if player does not have the same amount of cards as first player, return false.
+            if (this.currentPlayerIndex === this.players.length - 1) {
+                if (this.players[this.currentPlayerIndex].cards.length !== this.players[0].cards.length) {
+                    return false;
+                }
+            }
+            //if player is someone else, check if they have the same amount of cards as the last player. If so return fals.
+            else {
+                if (player.cards.length === this.players[this.players.length - 1].cards.length) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        convertToNumericValue(cardValue) {
+            switch (cardValue) {
+                case 'ACE':
+                    return 1;
+                case 'JACK':
+                    return 11;
+                case 'QUEEN':
+                    return 12;
+                default:
+                    return parseInt(cardValue);
+            }
+        },
+        checkForRonda(player) {
+            const cardRanks = player.cards.map(card => this.convertToNumericValue(card.value));
+            const uniqueRanks = [...new Set(cardRanks)];
+
+            for (const rank of uniqueRanks) {
+                if (cardRanks.filter(r => r === rank).length >= 2) {
+                    return rank;
+                }
+            }
+            return null;
+        },
+        applyRondaLogic(playerWithRonda) {
+            const playerWithRondaIndex = this.players.indexOf(playerWithRonda);
+            this.rondaPlayer = playerWithRonda.name;
+
+            for (let i = 0; i < this.players.length; i++) {
+                if (i !== playerWithRondaIndex) {
+                    const otherPlayer = this.players[i];
+                    if (otherPlayer.capturedCards.length > 0) {
+                        const cardToTransfer = otherPlayer.capturedCards.shift();
+                        playerWithRonda.capturedCards.push(cardToTransfer);
+                    } else {
+                        this.updateDebt(i, playerWithRondaIndex);
+                    }
+                }
+            }
+            setTimeout(() => {
+                this.rondaPlayer = null;
+            }, 3000);
+        },
+        updateDebt(debtorIndex, creditorIndex) {
+            const existingDebt = this.debts.find(debt => debt.debtor === debtorIndex && debt.creditor === creditorIndex);
+
+            if (existingDebt) {
+                existingDebt.amount++;
+            } else {
+                this.debts.push({ debtor: debtorIndex, creditor: creditorIndex, amount: 1 });
+            }
+        },
+        onCardLeave(card, done) {
+            if (this.isCapturedCard(card)) {
+                console.log(card);
+                let targetElement = document.getElementById(`captured-cards-container-${this.targetIndexForCardAnim}`);
+
+                // Calculate the target position
+                const targetPosition = targetElement.getBoundingClientRect();
+
+                // Get the card element's current position
+                const cardPosition = card.getBoundingClientRect();
+
+                // Calculate the translation values
+                const translateX = targetPosition.x - cardPosition.x;
+                const translateY = targetPosition.y - cardPosition.y;
+
+
+                // Apply the translation to the card element
+                card.style.transform = `translate(${translateX}px, ${translateY}px)`;
+                card.style.transition = "transform 1s";
+
+                // Listen for the transition end event to call the done() function
+                card.addEventListener('transitionend', () => {
+                    done();
+                    this.onCardAfterLeave(card);
+                });
+            }
+        },
+        onCardAfterLeave(cardElement) {
+            // Reset the card element's transform and transition properties
+            // cardElement.style.transform = '';
+            // cardElement.style.transition = '';
+        },
+        isCapturedCard() {
+            if (this.players[this.targetIndexForCardAnim].capturedCards.some(capturedCard => capturedCard.code === this.cardIdForAnim)) {
+                return true;
+            }
+            return false;
+        },
+    }
+};
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+.card-fly-in-enter-active {
+    animation: cardFlyIn 1s ease-out forwards;
+}
+
+.waviy {
+    position: relative;
+    -webkit-box-reflect: below -20px linear-gradient(transparent, rgba(0, 0, 0, .2));
+    font-size: 60px;
+}
+
+.waviy span {
+    position: relative;
+    display: inline-block;
+    color: #262626;
+    text-transform: uppercase;
+    animation: waviy 1s infinite;
+    animation-delay: calc(.1s * var(--i));
+}
+
+@keyframes cardFlyIn {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes waviy {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0)
+    }
+
+    20% {
+        transform: translateY(-30px)
+    }
+}
+</style>

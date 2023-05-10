@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&display=swap");
+
+body {
+  font-family: "Quicksand", sans-serif;
+}
+
+h1,
+h2 {
+  font-weight: 700;
+}
+
+/* Product cards */
+
+.product-card {
+  box-shadow: 1px 1px 4px 0 rgb(30 30 30 / 16%);
+}
+
+.product-card img {
+  margin: auto;
+  display: block;
+  max-width: 115px;
+  max-height: 100px;
+  margin-bottom: 10px;
+}
+
+@media screen and (max-width: 768px) {
+  .product-card img {
+    display: block;
+    width: 85px;
+    margin-right: 10px;
+    margin-bottom: 0px;
+    height: auto;
+    float: left;
+  }
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.product-card p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.product-card small {
+  color: #b3b3b3;
+  font-size: 0.8rem;
+}
+
+/* Social icons */
+
+.fa-brands:hover {
+  color: #929292;
+}
+.player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.player:first-child{
+  margin-right: 200px;
+}
+
+.player-name {
+  font-weight: bold;
+}
+
+.player-cards {
+  display: flex;
+}
+
+.game-table {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.center-cards {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.current-player {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 1em;
+}
+.card-fly-in-container {
+  display: flex;
+  justify-content: center;
+}
