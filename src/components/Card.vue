@@ -1,5 +1,5 @@
 <template>
-  <div class="card" :class="{ 'captured-card': captured }" :id="card.code" @click="handleCardClick">
+  <div class="card" :class="{ 'captured-card': captured }" :id="card.code">
     <img :src="card.image" />
   </div>
 </template>
@@ -14,9 +14,10 @@ export default {
     },
   },
   methods: {
-    handleCardClick() {
-      this.$emit('card-clicked', this.card);
-    },
+    //could have, make a button to change the perferred way of capturing/ getting card. " @click="handleCardClick"" needs to be added to template
+    // handleCardClick() {
+    //   this.$emit('card-clicked', this.card);
+    // },
   },
 };
 </script>

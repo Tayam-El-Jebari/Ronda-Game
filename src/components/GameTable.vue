@@ -16,8 +16,8 @@
             Current Player: {{ players[currentPlayerIndex].name }}
         </div>
         <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
-           <Player v-for="( player, index ) in  players " :key=" index " :player=" player " :playerIndex=" index "
-        @card-clicked="captureOrPlaceCards" @card-dragged="handleCardDragged" />
+            <Player v-for="( player, index ) in  players " :key="index" :player="player" :playerIndex="index"
+                @card-dragged="handleCardDragged" />
         </transition-group>
         <p>Center Board:</p>
         <div class="center-cards" @dragover.prevent @drop="handleDrop">
@@ -36,7 +36,7 @@
         <button @click="startGame">Start Game</button>
     </div>
 </template>
-  
+
 <script>
 import axios from 'axios';
 import Card from './Card.vue';
@@ -79,11 +79,28 @@ export default {
     },
     methods: {
         async startGame() {
+            await this.resetGame();
             await this.createDeck();
             await this.dealCenterCards()
-            await this.shuffleDeck();
             await this.dealCards();
             // Implement game logic, card capturing, and scoring mechanisms
+        },
+        async resetGame() {
+            this.players = [
+                { name: 'Player 1', cards: [], capturedCards: [] },
+                { name: 'Player 2', cards: [], capturedCards: [] },
+            ];
+            this.centerCards = [];
+            this.currentPlayerIndex = 0;
+            this.lastCapturedCard = '';
+            this.winner = '';
+            this.remainingCards = 0;
+            this.debts = [];
+            this.targetIndexForCardAnim = 0;
+            this.cardIdForAnim = '';
+            this.rondaPlayer = null;
+            this.draggedCard = null;
+            this.draggedPlayer = null;
         },
         async createDeck() {
             const response = await axios.get(`${DECK_API}/new/shuffle/?cards=${spanishDeck.join(',')}`);
@@ -118,7 +135,7 @@ export default {
                 } else {
                     // Return the drawn cards to the deck
                     let cardCodes = cards.map(card => card.code).join(',');
-                    await axios.post(`${DECK_API}/${this.deckId}/shuffle/?cards=${spanishDeck.join(',')}`);
+                    await axios.post(`${DECK_API}/${this.deckId}/return/?cards=${cardCodes}`);
                     await this.shuffleDeck();
                 }
             }
@@ -194,15 +211,6 @@ export default {
                 player.cards = player.cards.filter(playerCard => playerCard.code !== card.code);
             }
         },
-        hideCard(cardCode) {
-            //this method helps with the animation process being smoother.
-            const cardElement = document.getElementById(cardCode);
-            console.log(cardCode);
-            if (cardElement) {
-                cardElement.style.display = 'none';
-                console.log(cardElement);
-            }
-        },
         handleDebtLogic(cardsToCapture) {
             for (let i = 0; i < cardsToCapture.length; i++) {
                 const currentPlayerDebt = this.debts.find(debt => debt.debtor === this.currentPlayerIndex);
@@ -215,9 +223,21 @@ export default {
                     this.players[this.currentPlayerIndex].capturedCards.push(cardsToCapture[i]);
                     this.targetIndexForCardAnim = this.currentPlayerIndex;
                 }
-                this.removeCardFromCenter(cardsToCapture[i])
-
-                this.lastCapturedCard = cardsToCapture[i];
+                this.handleCardRemoval(cardsToCapture[i]);
+            }
+        },
+        handleCardRemoval(card) {
+            this.removeCardFromCenter(card)
+            this.lastCapturedCard = card;
+            this.checkAndApplyMissa();
+        },
+        checkAndApplyMissa() {
+            if (this.centerCards.length === 0) {
+                this.players.forEach((player, index) => {
+                    if (index !== this.currentPlayerIndex) {
+                        this.updateDebt(index, this.currentPlayerIndex);
+                    }
+                });
             }
         },
         checkForDebt(targetPlayerIndex) {
@@ -255,16 +275,45 @@ export default {
             }
         },
         checkForWinner() {
-            //change to for loop
             if (this.remainingCards === 0) {
-                if (this.players[0].capturedCards.length > this.players[1].capturedCards.length) {
-                    this.winner = this.players[0].name;
-                } else if (this.players[0].capturedCards.length < this.players[1].capturedCards.length) {
-                    this.winner = this.players[1].name;
+                let maxCapturedCards = -1;
+                let winners = [];
+
+                if (this.lastCapturedCard) {
+                    const lastCapturingPlayer = this.players[this.currentPlayerIndex];
+                    lastCapturingPlayer.capturedCards.push(...this.centerCards);
+                }
+                let lastCapturingPlayer = this.getLastCapturingPlayer();
+                if (lastCapturingPlayer) {
+                    lastCapturingPlayer.capturedCards.push(...this.centerCards);
+                }
+
+                for (const player of this.players) {
+                    if (player.capturedCards.length > maxCapturedCards) {
+                        maxCapturedCards = player.capturedCards.length;
+                        winners = [player];
+                    } else if (player.capturedCards.length === maxCapturedCards) {
+                        winners.push(player);
+                    }
+                }
+
+                if (winners.length === 1) {
+                    this.winner = winners[0].name;
                 } else {
                     this.winner = 'Tie';
                 }
             }
+        },
+        getLastCapturingPlayer() {
+            // Give the centered cards to player only if they captured a card in the last turn.
+            if (this.lastCapturedCard) {
+                for (const player of this.players) {
+                    if (player.capturedCards.some(card => card.value === this.lastCapturedCard.value)) {
+                        return player;
+                    }
+                }
+            }
+            return null;
         },
         canEndTurn(player) {
             if (player.cards.length === 3) {
@@ -343,6 +392,9 @@ export default {
             return false;
         },
     }
+
+    //a could have explained: make a button to change the perferred way of capturing/ getting card.
+    //add @card-clicked="captureOrPlaceCards" to the player.
 };
 </script>
 <style>
