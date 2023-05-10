@@ -3,8 +3,7 @@
         <div class="player-name">{{ player.name }}</div>
         <div class="player-cards-box">
             <div class="player-cards">
-                <transition-group name="player-card-fly-in" tag="div" class="player-cards"
-                    @leave="$emit('card-leave', $event)" @after-leave="onCardAfterLeave">
+                <transition-group name="player-card-fly-in" tag="div" class="player-cards">
                     <Card v-for="(card, index) in player.cards" :key="index" :card="card"
                         @card-clicked="handleCardClicked" />
                 </transition-group>
@@ -40,10 +39,6 @@ export default {
         handleCardClicked(card) {
             this.$emit('card-clicked', card, this.player);
         },
-        onCardAfterLeave(cardElement) {
-            cardElement.style.transform = '';
-            cardElement.style.transition = '';
-        }
     },
 };
 </script>

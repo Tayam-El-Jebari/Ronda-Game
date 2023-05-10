@@ -17,12 +17,12 @@
         </div>
         <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
             <Player v-for="( player, index ) in  players " :key=" index " :player=" player " :playerIndex=" index "
-                @card-clicked=" captureOrPlaceCards " @leave=" onCardLeave " />
+                @card-clicked=" captureOrPlaceCards " />
         </transition-group>
         <p>Center Board:</p>
         <div class="center-cards">
-            <transition-group name="card-fly-in" tag="div" class="card-fly-in-container" @leave=" onCardLeave "
-                @after-leave=" onCardAfterLeave ">
+            <transition-group name="card-fly-in" tag="div" class="card-fly-in-container"
+                >
                 <Card v-for="( card, index ) in  centerCards " :key=" index " :card=" card "
                     @card-clicked=" captureCardHigherRank " />
             </transition-group>
@@ -322,38 +322,6 @@ export default {
             } else {
                 this.debts.push({ debtor: debtorIndex, creditor: creditorIndex, amount: 1 });
             }
-        },
-        onCardLeave(card, done) {
-            if (this.isCapturedCard(card)) {
-                console.log(card);
-                let targetElement = document.getElementById(`captured-cards-container-${this.targetIndexForCardAnim}`);
-
-                // Calculate the target position
-                const targetPosition = targetElement.getBoundingClientRect();
-
-                // Get the card element's current position
-                const cardPosition = card.getBoundingClientRect();
-
-                // Calculate the translation values
-                const translateX = targetPosition.x - cardPosition.x;
-                const translateY = targetPosition.y - cardPosition.y;
-
-
-                // Apply the translation to the card element
-                card.style.transform = `translate(${translateX}px, ${translateY}px)`;
-                card.style.transition = "transform 1s";
-
-                // Listen for the transition end event to call the done() function
-                card.addEventListener('transitionend', () => {
-                    done();
-                    this.onCardAfterLeave(card);
-                });
-            }
-        },
-        onCardAfterLeave(cardElement) {
-            // Reset the card element's transform and transition properties
-            // cardElement.style.transform = '';
-            // cardElement.style.transition = '';
         },
         isCapturedCard() {
             if (this.players[this.targetIndexForCardAnim].capturedCards.some(capturedCard => capturedCard.code === this.cardIdForAnim)) {
