@@ -4,8 +4,8 @@
         <div class="player-cards-box">
             <div class="player-cards">
                 <transition-group name="player-card-fly-in" tag="div" class="player-cards">
-                    <Card v-for="(card, index) in player.cards" :key="index" :card="card"
-                        draggable="true" @dragstart="handleDragStart($event, card, player)"  @dragend="handleCardDragEnd" />
+                    <Card v-for="(card, index) in player.cards" :key="index" :card="card" draggable="true"
+                        @dragstart="handleDragStart($event, card, player)" @dragend="handleCardDragEnd" />
                 </transition-group>
 
             </div>
@@ -37,12 +37,15 @@ export default {
     },
     methods: {
         //could have, make a button to change the perferred way of capturing/ getting card. @card-clicked="handleCardClicked" needs to be added to template
-        // handleCardClicked(card) {
-        //     this.$emit('card-clicked', card, this.player);
-        // },
+        handleCardClicked(card) {
+            this.$emit('card-clicked', card, this.player);
+        },
         handleDragStart(event, card, player) {
             event.dataTransfer.effectAllowed = "move";
             this.$emit('card-dragged', card, player);
+        },
+        handleCardDragEnd() {
+            // Definieer hier de logica voor de handleCardDragEnd-methode
         },
     },
 };

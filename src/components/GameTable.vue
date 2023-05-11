@@ -171,8 +171,6 @@ export default {
             return true;
         },
         captureCardHigherRank(card) {
-            console.log(card);
-            console.log(this.convertToNumericValue(this.lastCapturedCard.value))
             let lastCapturedValue = this.convertToNumericValue(this.lastCapturedCard.value);
             //this is done because only cards 1-7 and 10-12 exist. Simple fix for capturing rank 10 when you have a 7
             if (lastCapturedValue == 7) {
