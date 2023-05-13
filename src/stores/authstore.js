@@ -23,10 +23,8 @@ export const useUserAuthStore = defineStore('auth', {
                     .post("users/login", {
                         username: username,
                         password: password,
-
                     })
                     .then((result) => {
-                        console.log(result);
                         this.jwt = result.data.jwt;
                         this.username = result.data.username;
                         localStorage.setItem("jwt", this.jwt);
@@ -39,19 +37,5 @@ export const useUserAuthStore = defineStore('auth', {
                         reject
                     });
             });   
-
-            // async login(username, password) {
-            //     return new Promise((resolve, reject) => {
-            //        return new Promise(async (resolve, reject) => {
-            //            try {
-            //              const result = await axios.post("users/login", { username: username, password: password });
-            //              console.log(result);
-            //              this.jwt = result.data.jwt;
-            //              this.username = result.data.username;
-            //              axios.defaults.headers.common['Authorization'] = 'Bearer ' + result.data.jwt;
-            //              resolve();
-            //            } catch (error) {
-            //                reject("There was an error logging in. Please check your credentials and try again.")
-            //            }
     }
 }});

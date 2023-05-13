@@ -44,10 +44,6 @@ export default {
   },
   methods: {
     async login() {
-      // this.store.login(this.username, this.password).then(()=>{
-      //   this.$router.push('/products');  
-      // })
-      // .catch(res => {this.errormessage = res});
         try{
           await this.store.login(this.username, this.password);
           this.$router.push('/products');
