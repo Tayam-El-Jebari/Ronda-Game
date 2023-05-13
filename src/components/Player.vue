@@ -1,6 +1,8 @@
 <template>
     <div class="player">
         <div class="player-name">{{ player.name }}</div>
+        <div class="player-debt" v-if="debt > 0">Debt: {{ debt }}</div>
+
         <div class="player-cards-box">
             <div class="player-cards">
                 <transition-group name="player-card-fly-in" tag="div" class="player-cards">
@@ -45,9 +47,18 @@ export default {
             this.$emit('card-dragged', card, player);
         },
         handleCardDragEnd() {
-            // Definieer hier de logica voor de handleCardDragEnd-methode
         },
     },
+    computed: {
+        debt() {
+            if (this.$parent.debts) {
+                const debt = this.$parent.debts.find(debt => debt.debtor === this.playerIndex);
+                return debt ? debt.amount : 0;
+            } else {
+                return 0;
+            }
+        }
+    }
 };
 </script>
 <style scoped>

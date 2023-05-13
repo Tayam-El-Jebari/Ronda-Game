@@ -26,14 +26,17 @@
                     @card-clicked="captureCardHigherRank" />
             </transition-group>
         </div>
-        <div v-if="rondaPlayer" class="waviy">
+        <button @click="endTurn" class="end-turn-button">End Turn</button>
+        <div v-if="isLoading">
+            Loading...
+        </div>
+        <button v-if="!isLoading" @click="startGame">Start Game</button>
+        <div v-if="rondaPlayer" class="waviyAnimation">
             <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key="index"
                 :style="{ '--i': index + 1 }">
                 {{ letter }}
             </span>
         </div>
-        <button @click="endTurn" class="end-turn-button">End Turn</button>
-        <button @click="startGame">Start Game</button>
     </div>
 </template>
 
@@ -49,6 +52,9 @@ const spanishDeck = [
     '2H', '3H', '4H', '5H', '6H', '7H', '0H', 'AH', 'JH', 'QH',
 ];
 const DECK_API = 'https://deckofcardsapi.com/api/deck';
+const minAmountOfClicksCPU = 0;
+const maxAmountOfClicksCPU = 3;
+
 
 
 export default {
@@ -58,37 +64,41 @@ export default {
     },
     data() {
         return {
+            isLoading: false,
             deckId: '',
             players: [] = [
                 { name: 'Player 1', cards: [], capturedCards: [] },
-                { name: 'Player 2', cards: [], capturedCards: [] },
+                { name: 'CPU', cards: [], capturedCards: [] },
             ],
             centerCards: [],
             currentPlayerIndex: 0,
+            //used for keeping trying to keep track of being able to capture a card of higher rank
             lastCapturedCard: '',
             winner: '',
             remainingCards: 0,
             debts: [],
-            //used for the animation, this way it's easy to know to which deck a card should go to.
+            //used for the animation, this way it's easy to know to which deck a card should go to
             targetIndexForCardAnim: 0,
             cardIdForAnim: '',
             rondaPlayer: null,
             draggedCard: null,
             draggedPlayer: null,
+            
         };
     },
     methods: {
         async startGame() {
+            this.isLoading = true;
             await this.resetGame();
             await this.createDeck();
             await this.dealCenterCards()
             await this.dealCards();
-            // Implement game logic, card capturing, and scoring mechanisms
+            this.isLoading = false;
         },
         async resetGame() {
             this.players = [
                 { name: 'Player 1', cards: [], capturedCards: [] },
-                { name: 'Player 2', cards: [], capturedCards: [] },
+                { name: 'CPU', cards: [], capturedCards: [] },
             ];
             this.centerCards = [];
             this.currentPlayerIndex = 0;
@@ -177,7 +187,6 @@ export default {
                 lastCapturedValue = 9
             }
             if (this.convertToNumericValue(card.value) == (lastCapturedValue + 1)) {
-                console.log("yes");
                 this.handleDebtLogic([card]);
             }
         },
@@ -249,11 +258,38 @@ export default {
         },
         nextTurn() {
             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-            //checks if player 1 is out of cards
+            if (this.players[this.currentPlayerIndex].name === 'CPU') {
+                this.cpuTurn();
+            }
+            //checks if player 1 is out of cards, if so, then give 3 cards to each player
             if (this.currentPlayerIndex === 0 && this.players[this.currentPlayerIndex].cards.length === 0) {
                 this.dealCards();
                 this.checkForWinner();
             }
+        },
+        async cpuTurn() {
+            const cpu = this.players[this.currentPlayerIndex];
+            const randomCardIndex = Math.floor(Math.random() * cpu.cards.length);
+            const selectedCard = cpu.cards[randomCardIndex];
+            this.captureOrPlaceCards(selectedCard, cpu);
+            // Randomly 'clicks' on center cards to see if it can capture anything; only works if there is no missa
+            if (this.centerCards.length > 0) {
+                const randomAmountOfClicks = Math.floor(Math.random() * (maxAmountOfClicksCPU - minAmountOfClicksCPU)) + minAmountOfClicksCPU;
+
+                for (let i = 0; i < randomAmountOfClicks; i++) {
+                    const minDelay = 500;
+                    const maxDelay = 1500;
+                    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay)) + minDelay;
+
+                    // Wait for the random delay before executing the capture logic
+                    await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+                    let randomCardIndex = Math.floor(Math.random() * this.centerCards.length);
+                    this.captureCardHigherRank(this.centerCards[randomCardIndex]);
+                }
+            }
+
+            this.endTurn();
         },
         removeCardFromCenter(cardToRemove) {
             this.cardIdForAnim = cardToRemove.code;
@@ -263,9 +299,7 @@ export default {
             return this.centerCards.filter(centerCard => centerCard.value === card.value);
         },
         endTurn() {
-            const currentPlayer = this.players[this.currentPlayerIndex];
-
-            if (this.canEndTurn(currentPlayer)) {
+            if (this.canEndTurn(this.players[this.currentPlayerIndex])) {
                 this.nextTurn();
                 this.lastCapturedCard = '';
             } else {
@@ -402,18 +436,21 @@ export default {
     animation: cardFlyIn 1s ease-out forwards;
 }
 
-.waviy {
+.waviyAnimation {
+    transition: opacity 0.5s;
+
     position: relative;
     -webkit-box-reflect: below -20px linear-gradient(transparent, rgba(0, 0, 0, .2));
     font-size: 60px;
 }
 
-.waviy span {
+.waviyAnimation span {
+    opacity: 0;
     position: relative;
     display: inline-block;
     color: #262626;
     text-transform: uppercase;
-    animation: waviy 1s infinite;
+    animation: waviyAnimation 1s infinite;
     animation-delay: calc(.1s * var(--i));
 }
 
@@ -429,16 +466,21 @@ export default {
     }
 }
 
-@keyframes waviy {
+@keyframes waviyAnimation {
 
-    0%,
-    80%,
-    100% {
-        transform: translateY(0)
+    0% {
+        transform: translateY(0);
+        opacity: 0.9;
     }
 
     20% {
-        transform: translateY(-30px)
+        transform: translateY(-30px);
+    }
+
+    80%,
+    100% {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
 </style>
