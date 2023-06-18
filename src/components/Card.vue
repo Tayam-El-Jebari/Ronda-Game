@@ -27,6 +27,7 @@ export default {
     height: 120px;
     border: 0px;
     border-radius: 0px;
+    background-color: rgba(0,0,0,0) !important;
 }
 .captured-card img{
   opacity:0.4;

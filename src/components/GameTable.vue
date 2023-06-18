@@ -1,43 +1,45 @@
 <template>
-    <div class="game-table">
-        <p v-if="winner" class="winner-message waviy">
-            <template v-if="winner === 'Tie'">
-                <span v-for="(letter, index) in 'It\'s a tie!'" :key="index" :style="'--i:' + (index + 1)">
-                    {{ letter }}
-                </span>
-            </template>
-            <template v-else>
-                <span v-for="( letter, index ) in  (winner + ' wins!') " :key="index" :style="'--i:' + (index + 1)">
-                    {{ letter }}
-                </span>
-            </template>
-        </p>
-        <div class="current-player">
-            Current Player: {{ players[currentPlayerIndex].name }}
-        </div>
-        <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
-            <Player v-for="( player, index ) in  players " :key="index" :player="player" :playerIndex="index"
-                @card-dragged="handleCardDragged" />
-        </transition-group>
-        <p>Center Board:</p>
-        <div class="center-cards" @dragover.prevent @drop="handleDrop">
+    <section class=" vh-100 d-flex justify-content-center align-items-center">
+        <div class="game-table">
+            <p v-if="winner" class="winner-message waviy">
+                <template v-if="winner === 'Tie'">
+                    <span v-for="(letter, index) in 'It\'s a tie!'" :key="index" :style="'--i:' + (index + 1)">
+                        {{ letter }}
+                    </span>
+                </template>
+                <template v-else>
+                    <span v-for="( letter, index ) in  (winner + ' wins!') " :key="index" :style="'--i:' + (index + 1)">
+                        {{ letter }}
+                    </span>
+                </template>
+            </p>
+            <div class="current-player">
+                Current Player: {{ players[currentPlayerIndex].name }}
+            </div>
             <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
-                <Card v-for="( card, index ) in  centerCards " :key="index" :card="card"
-                    @card-clicked="captureCardHigherRank" />
+                <Player v-for="( player, index ) in  players " :key="index" :player="player" :playerIndex="index"
+                    @card-dragged="handleCardDragged" @card-clicked="handleCardClicked" />
             </transition-group>
+            <p>Center Board:</p>
+            <div class="center-cards" @dragover.prevent @drop="handleDrop">
+                <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
+                    <Card v-for="( card, index ) in  centerCards " :key="index" :card="card"
+                        @card-clicked="captureCardHigherRank" />
+                </transition-group>
+            </div>
+            <button @click="endTurn" v-if="gameStarted" class="end-turn-button btn btn-primary mb-5">End Turn</button>
+            <div v-if="isLoading">
+                Loading...
+            </div>
+            <button v-if="!isLoading" @click="startGame" class="btn btn-primary mb-5">Start Game</button>
+            <div v-if="rondaPlayer" class="waviyAnimation">
+                <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key="index"
+                    :style="{ '--i': index + 1 }">
+                    {{ letter }}
+                </span>
+            </div>
         </div>
-        <button @click="endTurn" class="end-turn-button">End Turn</button>
-        <div v-if="isLoading">
-            Loading...
-        </div>
-        <button v-if="!isLoading" @click="startGame">Start Game</button>
-        <div v-if="rondaPlayer" class="waviyAnimation">
-            <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key="index"
-                :style="{ '--i': index + 1 }">
-                {{ letter }}
-            </span>
-        </div>
-    </div>
+    </section>
 </template>
 
 <script>
@@ -83,7 +85,9 @@ export default {
             rondaPlayer: null,
             draggedCard: null,
             draggedPlayer: null,
-            
+            gameStarted: false,
+            lastPlayedCard: null,
+
         };
     },
     methods: {
@@ -94,6 +98,7 @@ export default {
             await this.dealCenterCards()
             await this.dealCards();
             this.isLoading = false;
+            this.gameStarted = true;
         },
         async resetGame() {
             this.players = [
@@ -157,6 +162,7 @@ export default {
         handleDrop(event) {
             event.preventDefault();
             this.captureOrPlaceCards(this.draggedCard, this.draggedPlayer);
+            //resets the dragged card and player
             this.draggedCard = null;
             this.draggedPlayer = null;
         },
@@ -194,23 +200,23 @@ export default {
             if (player !== this.players[this.currentPlayerIndex]) {
                 return;
             }
-            //if you can end turn, you can't place/capture any new cards
+            //checks if the user should end their turn, if so, don't do anything
             if (this.canEndTurn(player)) {
                 return;
             }
 
 
-            // Check if the clicked card can capture any card(s) from the center
+            // Check if the dragged card can capture any card(s) from the center
             const captureCandidates = this.findCaptureCandidates(card);
 
             // If there are valid captures, update the game state
             if (captureCandidates.length > 0) {
 
                 const cardsToCapture = [card, ...captureCandidates];
-                this.handleDebtLogic(cardsToCapture);
-
                 // Remove the played card from the player's hand
                 player.cards = player.cards.filter(playerCard => playerCard.code !== card.code);
+
+                this.handleDebtLogic(cardsToCapture);
             }
             else {
                 // add card to the center, as it is not able to capture something
@@ -224,6 +230,7 @@ export default {
                 if (currentPlayerDebt && currentPlayerDebt.amount > 0) {
                     this.players[currentPlayerDebt.creditor].capturedCards.push(cardsToCapture[i])
                     currentPlayerDebt.amount--;
+                    //for the animation, we need to know who the creditor is, so we can animate the card to them
                     this.targetIndexForCardAnim = currentPlayerDebt.creditor;
                 }
                 else {

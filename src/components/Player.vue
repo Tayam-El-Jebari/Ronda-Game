@@ -14,7 +14,7 @@
         </div>
         <p>Captured cards: </p>
         <div class="captured-cards-container" :id="`captured-cards-container-${playerIndex}`">
-            <div class="captured-cards-count">{{ player.capturedCards.length }}</div>
+            <div class="captured-cards-count">{{ player.capturedCards.length}}</div>
             <div class="captured-cards">
                 <Card v-for="(card, index) in player.capturedCards" :key="index" :card="card" :captured="true" />
             </div>
