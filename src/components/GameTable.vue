@@ -1,7 +1,7 @@
 <template>
     <section class=" vh-100 d-flex justify-content-center align-items-center">
         <div class="game-table">
-            <p v-if="winner" class="winner-message waviy">
+            <p v-if="winner" class="winner-message waviyAnimation">
                 <template v-if="winner === 'Tie'">
                     <span v-for="(letter, index) in 'It\'s a tie!'" :key="index" :style="'--i:' + (index + 1)">
                         {{ letter }}
@@ -21,7 +21,7 @@
                     @card-dragged="handleCardDragged" @card-clicked="handleCardClicked" />
             </transition-group>
             <p>Center Board:</p>
-            <div class="center-cards" @dragover.prevent @drop="handleDrop">
+            <div class="center-cards rounded-5" @dragover.prevent @drop="handleDrop">
                 <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
                     <Card v-for="( card, index ) in  centerCards " :key="index" :card="card"
                         @card-clicked="captureCardHigherRank" />
@@ -31,7 +31,8 @@
             <div v-if="isLoading">
                 Loading...
             </div>
-            <button v-if="!isLoading" @click="startGame" class="btn btn-primary mb-5">Start Game</button>
+            <button v-if="!isLoading && !gameStarted" @click="startGame" class="btn btn-primary mb-5">{{ buttonText
+            }}</button>
             <div v-if="rondaPlayer" class="waviyAnimation">
                 <span v-for="( letter, index ) in  (rondaPlayer + '   has   Ronda!') " :key="index"
                     :style="{ '--i': index + 1 }">
@@ -64,6 +65,14 @@ export default {
         Card,
         Player,
     },
+    computed: {
+        buttonText() {
+            return this.winner ? 'Restart Game' : 'Start Game';
+        }
+    },
+    created() {
+        this.loadGameState();
+    },
     data() {
         return {
             isLoading: false,
@@ -86,7 +95,6 @@ export default {
             draggedCard: null,
             draggedPlayer: null,
             gameStarted: false,
-            lastPlayedCard: null,
 
         };
     },
@@ -116,6 +124,7 @@ export default {
             this.rondaPlayer = null;
             this.draggedCard = null;
             this.draggedPlayer = null;
+            this.gameStarted = false;
         },
         async createDeck() {
             const response = await axios.get(`${DECK_API}/new/shuffle/?cards=${spanishDeck.join(',')}`);
@@ -131,7 +140,6 @@ export default {
                 player.cards = response.data.cards;
                 const rondaRank = this.checkForRonda(player);
                 if (rondaRank !== null) {
-                    console.log("ronda!")
                     this.applyRondaLogic(player);
                 }
             }
@@ -153,6 +161,34 @@ export default {
                     await axios.post(`${DECK_API}/${this.deckId}/return/?cards=${cardCodes}`);
                     await this.shuffleDeck();
                 }
+            }
+        },
+        saveGameState() {
+            const gameState = {
+                deckId: this.deckId,
+                players: this.players,
+                centerCards: this.centerCards,
+                currentPlayerIndex: this.currentPlayerIndex,
+                lastCapturedCard: this.lastCapturedCard,
+                winner: this.winner,
+                remainingCards: this.remainingCards,
+                debts: this.debts,
+                targetIndexForCardAnim: this.targetIndexForCardAnim,
+                cardIdForAnim: this.cardIdForAnim,
+                rondaPlayer: this.rondaPlayer,
+                draggedCard: this.draggedCard,
+                draggedPlayer: this.draggedPlayer,
+                gameStarted: this.gameStarted,
+            };
+            // save locally
+            localStorage.setItem('gameState', JSON.stringify(gameState));
+        },
+        loadGameState() {
+            let gameState = localStorage.getItem('gameState');
+
+            if (gameState) {
+                gameState = JSON.parse(gameState);
+                Object.assign(this.$data, gameState);
             }
         },
         handleCardDragged(card, player) {
@@ -309,6 +345,7 @@ export default {
             if (this.canEndTurn(this.players[this.currentPlayerIndex])) {
                 this.nextTurn();
                 this.lastCapturedCard = '';
+                this.saveGameState();
             } else {
                 alert("Current player cannot end turn without capturing a card.");
             }
@@ -341,6 +378,8 @@ export default {
                 } else {
                     this.winner = 'Tie';
                 }
+                localStorage.removeItem('gameState');
+                this.gameStarted = false;
             }
         },
         getLastCapturingPlayer() {
@@ -436,8 +475,19 @@ export default {
     //add @card-clicked="captureOrPlaceCards" to the player.
 };
 </script>
-<style>
+<style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+body {
+    background-color: #9aadb8;
+}
+
+.center-cards {
+    min-height: 5vh !important;
+    min-width: 100%;
+    background-color: #5b6b7a;
+    border-radius: 10px;
+}
 
 .card-fly-in-enter-active {
     animation: cardFlyIn 1s ease-out forwards;

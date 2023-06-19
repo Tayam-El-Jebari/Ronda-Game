@@ -18,7 +18,7 @@
             <div class="image-container">
               <img
                 class=""
-                src="../assets/img/login/login-banner.png"
+                src="../assets/img/login/cursed_cat.jpg"
                 alt="Description"
               />
             </div>
@@ -36,6 +36,18 @@
                   class="form-control"
                   placeholder="your-email@example.com"
                   v-model="email"
+                />
+              </div>
+              <div class="mb-3" v-if="register">
+                <label for="inputFirstName" class="form-label"
+                  >Username</label
+                >
+                <input
+                  id="inputFirstName"
+                  type="text"
+                  class="form-control"
+                  placeholder="Ahrnuld"
+                  v-model="username"
                 />
               </div>
               <div class="mb-3" v-if="register">
@@ -84,7 +96,7 @@
               </div>
               <div class="mb-3" v-if="register">
                 <label for="inputDateOfBirth" class="form-label"
-                  >Date of Birth (Must be over 18!)</label
+                  >Date of Birth</label
                 >
                 <input
                   type="date"
@@ -94,7 +106,7 @@
                 />
               </div>
               <div class="text-center">
-                <div class="text-danger" v-if="errorMessage">
+                <div class="text-danger fw-bold" v-if="errorMessage">
                   {{ errorMessage }}
                 </div>
                 <button
@@ -163,6 +175,7 @@ export default {
       email: "",
       password: "",
       confirmPassword: "",
+      username: "",
       firstName: "",
       lastName: "",
       dateOfBirth: "",
@@ -229,7 +242,7 @@ export default {
 
       gsap.to(this.$refs.rightDiv, {
         x: leftDivPosition.x - rightDivPosition.x,
-        height: "71vh",
+        height: "78vh",
         borderRadius: "20px 0 0 20px",
         duration: 1,
       });
@@ -251,11 +264,13 @@ export default {
       this.store
         .login(this.email, this.password)
         .then(() => {
-          this.$router.replace("/dashboard");
+          console.log("login successful"	)
+          this.$router.replace("/");
+          console.log("login successful2")
         })
         .catch((error) => {
           this.errorMessage =
-            error.response.data.message;
+            error.response.errorMessage || error.response.data.errorMessage;
         });
     },
     registerUser() {
@@ -265,6 +280,7 @@ export default {
       }
       this.store
         .register(
+          this.username,
           this.email,
           this.password,
           this.firstName,
@@ -272,16 +288,17 @@ export default {
           this.dateOfBirth
         )
         .then((res) => {
-          this.modalMessage = res;
+          this.modalMessage = res.response.message;
           this.showSuccessModal = true;
         })
         .catch((error) => {
-          this.errorMessage = error;
+          this.errorMessage = error.response.errorMessage || error.response.data.errorMessage;
         });
     },
     closeModal() {
       this.showSuccessModal = false;
       this.password = "";
+      this.username ="";
       this.firstName = "";
       this.lastName = "";
       this.confirmPassword = "";
@@ -372,7 +389,9 @@ label {
   margin: 35px;
   margin-top: 10px;
 }
-
+label{
+  color: white;
+}
 .image-container img {
   width: 100%;
   border-radius: 1.25rem;
