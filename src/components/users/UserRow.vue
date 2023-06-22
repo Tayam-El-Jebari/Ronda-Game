@@ -12,10 +12,12 @@
 
         <td>
             <button @click="showUpdateModal = true" class="btn update btn-warning">Update</button>
-            <button @click="showDeactivateModal = true" class="btn btn-danger">delete</button>
+            <button @click="showDeleteModal = true" class="btn btn-danger">Delete</button>
         </td>
         <UpdateUserModal :show="showUpdateModal" :user="user" @updateUser="updateUserDetails"
             @close="showUpdateModal = false" />
+        <DeleteUserModal :show="showDeleteModal" :user="user" @deleteUser="deleteUser"
+            @close="showDeleteModal = false" />
     </tr>
 </template>
   
@@ -23,6 +25,7 @@
 import { useUserAuthStore } from "@/stores/authstore";
 import axios from "axios";
 import UpdateUserModal from "./UpdateUserModal.vue";
+import DeleteUserModal from "./DeleteUserModal.vue";
 
 export default {
     name: "UserRow",
@@ -31,10 +34,12 @@ export default {
     },
     components: {
         UpdateUserModal,
+        DeleteUserModal
     },
     data() {
         return {
             showUpdateModal: false,
+            showDeleteModal: false,
             updatedUser: {
                 username: this.user.username,
                 email: this.user.email,
@@ -66,6 +71,22 @@ export default {
                 .catch(error => {
                     this.errorMessage = error;
                 });
+        },
+        deleteUser(user) {
+            const authStore = useUserAuthStore();
+            axios.delete(`http://localhost:80/users/${user.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${authStore.getJwt}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                this.showDeleteModal = false;
+                this.$emit("userDeleted", user);
+            })
+            .catch(error => {
+                console.error(error);
+            });
         },
     },
 };

@@ -47,6 +47,7 @@
 import axios from 'axios';
 import Card from './Card.vue';
 import Player from './Player.vue';
+import { useUserAuthStore } from "@/stores/authstore";
 
 const spanishDeck = [
     '2S', '3S', '4S', '5S', '6S', '7S', '0S', 'AS', 'JS', 'QS',
@@ -71,6 +72,9 @@ export default {
         }
     },
     created() {
+        const authStore = useUserAuthStore();
+        this.players[0].name = authStore.getUsername;
+        //could have: save game state to server, load from server
         this.loadGameState();
     },
     data() {

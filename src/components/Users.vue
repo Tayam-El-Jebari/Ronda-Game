@@ -1,20 +1,19 @@
 <template>
     <section class="vh-100">
         <div class="container table ml-5 ">
-        <div class="d-flex justify-content-center align-items-center">
-            <label for="offset" class="me-2">page: </label>
-            <input v-model="offset" id="offset" type="number" class="me-5">
+            <div class="d-flex justify-content-center align-items-center">
+                <label for="offset" class="me-2">page: </label>
+                <input v-model="offset" id="offset" type="number" class="me-5">
 
-            <label for="limit" class="me-2">Limit: </label>
-            <input v-model="limit" id="limit" type="number" class="me-5">
+                <label for="limit" class="me-2">Limit: </label>
+                <input v-model="limit" id="limit" type="number" class="me-5">
 
-            <label for="username" class="me-2">Username: </label>
-            <input v-model="username" id="username" type="text" class="me-5">
+                <label for="username" class="me-2">Username: </label>
+                <input v-model="username" id="username" type="text" class="me-5">
+            </div>
+            <UserTable :users="users" @updateUser="updateUser" @deleteUser="deleteUser" />
         </div>
-        <UserTable :users="users" @updateUser="updateUser" @deleteUser="deleteUser" />
-    </div>
-</section>
-    
+    </section>
 </template>
 
 <script>
@@ -71,18 +70,7 @@ export default {
             });
         },
         deleteUser(user) {
-            const authStore = useUserAuthStore();
-            axios.delete(`http://localhost:8080/users/${user.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${authStore.getJwt}`
-                }
-            })
-                .then(response => {
-                    this.users = this.users.filter(u => u.id !== user.id);
-                })
-                .catch(error => {
-                    console.error(error);
-                })
+            this.users = this.users.filter(u => u.id !== user.id);
         },
     },
     watch: {

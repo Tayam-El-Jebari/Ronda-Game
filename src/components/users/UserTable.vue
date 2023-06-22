@@ -17,7 +17,7 @@
             </thead>
             <tbody>
                 <UserRow v-for="user in users" :key="user.id" :user="user" @userUpdated="updateUser"
-                    @deleteUser="deleteUser" @updateError="handleUpdateError" />
+                    @userDeleted="deleteUser" @updateError="handleUpdateError" />
             </tbody>
         </table>
     </div>
