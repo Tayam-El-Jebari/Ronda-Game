@@ -1,6 +1,7 @@
 <template>
   <div class="card" :class="{ 'captured-card': captured }" :id="card.code" @click="handleCardClick">
-    <img :src="card.image" />
+    <img v-if="shouldBeVisible" :src="card.image" />
+    <img v-else src="\src\assets\img\gameTable\back-side-card.png" />
   </div>
 </template>
 
@@ -12,6 +13,12 @@ export default {
       type: Boolean,
       default: false,
     },
+    //for the card back image
+    //default is true for the center cards
+    shouldBeVisible: {
+      type: Boolean,
+      default: true
+    }
   },
   methods: {
     handleCardClick() {

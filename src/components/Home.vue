@@ -6,73 +6,181 @@
       <h3 class="me-4"><a class="link" href="/login">login</a></h3>
       <h3 class="me-4"><a class="link" href="/register">register</a></h3>
       <h3 class="me-4"><a class="link" href="/gameTables">play game</a></h3>
-      <h3 class="me-4"><a class="link" href="#">rules</a></h3>
+      <h3 class="me-4"><a class="link" href="#rules">rules</a></h3>
+    </div>
+  </div>
+  <div v-if="isAuthenticated" class="container d-flex justify-content-center align-items-center w-100 mt-5 text-center">
+    <div class="row w-100">
+      <div class="col">
+        <h3>Wins CPU: <br>{{ statsAgainstCpu.winsAgainstCPU }}</h3>
+      </div>
+      <div class="col">
+        <h3>Ties CPU:<br>{{ statsAgainstCpu.tiesAgainstCPU }}</h3>
+      </div>
+      <div class="col">
+        <h3>Loses CPU: <br>{{ statsAgainstCpu.lossesAgainstCPU }}</h3>
+      </div>
     </div>
   </div>
   <div class="second-container-home d-flex align-items-center m-5">
     <div class="text-information">
       <h2 class="">Dive into the captivating world of Ronda, a thrilling card game where<br> you might even win money!
       </h2>
-      <small>
-        <sup>*</sup>Disclaimer: While the prospect of winning money might sound exciting, we would like to clarify that
-        any monetary rewards, wealth, fortune, or stacks of cash that may or may not appear in your possession have
-        absolutely no correlation with our platform or services.
+      <p class="m-5">
+        <small>
+          <sup>*</sup>Disclaimer: While the prospect of winning money might sound exciting, we would like to clarify that
+          any monetary rewards, wealth, fortune, or stacks of cash that may or may not appear in your possession have
+          absolutely no correlation with our platform or services.
 
-        The hypothetical scenario of you becoming wealthier due to our game exists in the same realm where unicorns roam
-        freely, where you might spontaneously develop the ability to breathe underwater, or where a billionaire decides to
-        drop bags of money on your doorstep for no apparent reason.
+          The hypothetical scenario of you becoming wealthier due to our game exists in the same realm where unicorns roam
+          freely, where you might spontaneously develop the ability to breathe underwater, or where a billionaire decides
+          to
+          drop bags of money on your doorstep for no apparent reason.
 
-        In other words, the likelihood of these events happening does not increase nor decrease due to your involvement
-        with our services. If you, by any chance, come to believe otherwise (perhaps due to a sudden windfall coinciding
-        with your time spent on our platform), it would be a pure coincidence, much like winning a lottery ticket the day
-        after you found a four-leaf clover.
+          In other words, the likelihood of these events happening does not increase nor decrease due to your involvement
+          with our services. If you, by any chance, come to believe otherwise (perhaps due to a sudden windfall coinciding
+          with your time spent on our platform), it would be a pure coincidence, much like winning a lottery ticket the
+          day
+          after you found a four-leaf clover.
 
-        We hereby disclaim all responsibility for any sudden or unexpected changes to your financial status, whether
-        positive or negative, and strongly urge all users to not harbor any illusions or fantasies regarding striking it
-        rich while using our services. After all, you'd have a better chance of getting struck by lightning while riding a
-        unicorn during a solar eclipse.
+          We hereby disclaim all responsibility for any sudden or unexpected changes to your financial status, whether
+          positive or negative, and strongly urge all users to not harbor any illusions or fantasies regarding striking it
+          rich while using our services. After all, you'd have a better chance of getting struck by lightning while riding
+          a
+          unicorn during a solar eclipse.
 
-        Remember, the true riches lie in the joy of the game itself. Have fun, play safe, and leave the money-making to
-        your day job (or a generous billionaire, if you're so lucky).
-      </small>
+          Remember, the true riches lie in the joy of the game itself. Have fun, play safe, and leave the money-making to
+          your day job (or a generous billionaire, if you're so lucky).
+        </small>
+      </p>
     </div>
     <div class="img ml-auto" alt="wow.png"></div>
   </div>
-  <section class="main-content">
-    <div class="game-image-container">
-      <img src="img/pic798234.webp" alt="Ronda Game" class="game-image" />
-    </div>
-    <div class="game-description">
-      <h2>About Ronda</h2>
-      <p>
-        Ronda is a popular card game played in Morocco. The game is played
-        with a deck of 40 Spanish cards and involves capturing cards by
-        matching them with the cards in hand.
-      </p>
-      <h3>Rules</h3>
-      <ol>
-        <li>Each player is dealt three cards.</li>
-        <li>
-          The goal is to capture cards from the center by matching them with
-          the cards in hand.
-        </li>
-        <li>Points are awarded for each captured card.</li>
-        <li>The player with the most points at the end wins.</li>
-      </ol>
-      <div class="bold-text">
-        <p>
-          Please note that you must <strong>login</strong> or <strong>register</strong> to
-          play the game.
-        </p>
+  <div class="d-flex justify-content-center align-items-center">
+    <section class="main-content container m-5 p-0" id="rules">
+      <div class="card">
+        <div class="card-header">
+          <h3>Ronda Game Rules</h3>
+        </div>
+        <div class="card-body">
+          <div class="accordion" id="rondaRulesAccordion">
+            <div class="card">
+              <div id="capturingCards" class="collapse show" aria-labelledby="capturingCardsHeader"
+                data-bs-parent="#rondaRulesAccordion">
+                <div class="card-body">
+                  <p class="card-text"><strong>Ronda is all about capturing cards</strong><br><br>
+                    You can capture cards in two ways: <br>
+                    Capturing by placing a card which is equal in rank to a card on the table. <br>
+                    Capturing cards which are of a higher rank, but are in a sequence to the pair you just had. For
+                    example;
+                    you pair two 5s, you may pick up 6,7,10,11 and 12, in that specific order.<br>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="card mt-3">
+              <div id="capturingCards" class="collapse show" aria-labelledby="capturingCardsHeader"
+                data-bs-parent="#rondaRulesAccordion">
+                <div class="card-body">
+                  <p class="card-text"><strong>You can also earn cards in a few specific scenario's. For
+                      example;</strong><br><br>
+                    get 1 card from each player if you get missa<br>
+                    get 1 card from each player if you get Ronda.<br><br>
+                    Ronda is when you have two of the same card rank in your hand.<br>
+                    If two players have ronda, the one to recieve the card would need to have the highest rank.<br>
+                    Both players got the rank? Nothing happends<br><br>
+                    Missa is when you clear the board.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="card mt-3">
+              <div id="capturingCards" class="collapse show" aria-labelledby="capturingCardsHeader"
+                data-bs-parent="#rondaRulesAccordion">
+                <div class="card-body">
+                  <p class="card-text"><strong>Other practical rules;</strong><br><br>
+                    At the first time, there shoudn't be two cards of a same number on the table.<br><br>
+                    Ronda plays with 40 cards of ranks 1 to 7, and 10 to 12, this version uses a normal card deck, that
+                    has 4 suits, 10 cards per suit.<br>
+                    Ace equals 1, jack equals 11, and the queen equals 12<br><br>
+                    Last player to capture a card in last turn gets all the cards in the center when the game is over (all 40 cards are
+                    played).<br><br>
+                    This version has no Este.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="card mt-3">
+              <div id="capturingCards" class="collapse show" aria-labelledby="capturingCardsHeader"
+                data-bs-parent="#rondaRulesAccordion">
+                <div class="card-body">
+                  <p class="card-text">There are some other rules in Ronda that sometimes get applied, like for example
+                    Este (get a bonus card from an opponent if you get the card immediately after they got it), but these
+                    we're the rules i played the game with when i was a child, so i chose to only code these rules.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p class="text-center mt-4">Have Fun!</p>
+
+          </div>
+        </div>
       </div>
-      <button @click="playGame" class="play-game-btn">Play Ronda</button>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <script>
+import { useUserAuthStore } from "@/stores/authstore";
+import axios from "axios";
+
 export default {
   name: "Home",
+  data() {
+    return {
+      statsAgainstCpu: {
+        winsAgainstCPU: "Loading...",
+        lossesAgainstCPU: "Loading...",
+        tiesAgainstCPU: "Loading..."
+      }
+    };
+  },
+  computed: {
+    isAuthenticated() {
+      return useUserAuthStore().isAuthenticated;
+    },
+    userId() {
+      return useUserAuthStore().getuserId;
+    },
+    jwt() {
+      return useUserAuthStore().getJwt;
+    }
+  },
+  created() {
+    this.getStatsAgainstCpu();
+  },
+  methods: {
+    getStatsAgainstCpu() {
+      if (this.isAuthenticated) {
+        axios.get(`http://localhost:80/users/statsCpu/${this.userId}`, {
+          headers: {
+            'Authorization': `Bearer ${this.jwt}`
+          }
+        })
+        .then((response) => {
+          this.statsAgainstCpu = response.data;
+        })
+        .catch((error) => {
+          this.statsAgainstCpu = {
+            winsAgainstCPU: "",
+            lossesAgainstCPU: "",
+            tiesAgainstCPU: "Failed to retrieve data"
+          };
+          console.log(error);
+        });
+      }
+    }
+  }
 };
 </script>
 
@@ -101,7 +209,7 @@ export default {
   margin-left: 50px;
   font-weight: 300;
   font-size: 10px;
-  overflow:hidden;
+  overflow: hidden;
 
 }
 
@@ -115,7 +223,7 @@ export default {
 .text-information {
   flex-direction: column;
   width: 70%;
-  overflow:hidden;
+  overflow: hidden;
 
 }
 
@@ -172,7 +280,8 @@ export default {
   font-size: 20vw;
   transform: uppercase;
 }
-.ronda-container h2{
+
+.ronda-container h2 {
   font-family: 'instrument Serif';
 
 }
@@ -187,14 +296,6 @@ export default {
   border: none;
   padding: 0.5rem 1rem;
   cursor: pointer;
-}
-
-.main-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
 }
 
 .game-image-container {
@@ -226,26 +327,39 @@ export default {
   transition: background-color 0.3s;
 }
 
+.card-header {
+  background-color: #293241;
+  color: white;
+}
+
 .play-game-btn:hover {
   background-color: #6a6a6a;
 }
-@media (max-width:801px)
-{
-  .second-container-home{
+
+@media (max-width: 1200px) {
+  .second-container-home {
+    display: none !important;
+  }
+}
+
+@media (max-width:801px) {
+  .second-container-home {
     flex-direction: column;
-    overflow:hidden;
+    overflow: hidden;
+    display: none;
   }
-  .ronda-container h2{
-    display:none;
+
+  .ronda-container h2 {
+    display: none;
   }
+
   .ronda-container::before {
-  width: 100%;
-  height: 55%;
-}
-  .text-information{
-    overflow:hidden;
-    width:100%;
-    height:100%
+    width: 100%;
+    height: 55%;
   }
-}
-</style>
+
+
+  .img {
+    background: url("../assets/img/home/wow.jpg") no-repeat left center;
+  }
+}</style>

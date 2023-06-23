@@ -44,7 +44,7 @@ export const useUserAuthStore = defineStore('auth', {
     actions: {
         login(email, password) {
             return new Promise((resolve, reject) => {
-                axios.post("/users/login", {
+                axios.post("/auth/login", {
                     email: email,
                     password: password,
                 })

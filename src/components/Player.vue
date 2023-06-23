@@ -7,7 +7,8 @@
             <div class="player-cards">
                 <transition-group name="player-card-fly-in" tag="div" class="player-cards">
                     <Card v-for="(card, index) in player.cards" :key="index" :card="card" draggable="true"
-                        @dragstart="handleDragStart($event, card, player)" @dragend="handleCardDragEnd" />
+                        @dragstart="handleDragStart($event, card, player)" @dragend="handleCardDragEnd" 
+                        :shouldBeVisible="!isOpposingPlayer" />
                 </transition-group>
 
             </div>
@@ -19,7 +20,6 @@
                 <Card v-for="(card, index) in player.capturedCards" :key="index" :card="card" :captured="true" />
             </div>
         </div>
-
     </div>
 </template>
   
@@ -35,6 +35,10 @@ export default {
         playerIndex: {
             type: Number,
             required: true
+        },
+        isOpposingPlayer: {
+            type: Boolean,
+            default: false
         }
     },
     methods: {
@@ -133,5 +137,10 @@ export default {
     border-radius: 5px;
     overflow: hidden;
 
+}
+@media (max-width: 600px) {
+    .player {
+        margin-right: 30px !important;
+    }
 }
 </style>

@@ -264,9 +264,7 @@ export default {
       this.store
         .login(this.email, this.password)
         .then(() => {
-          console.log("login successful"	)
           this.$router.replace("/");
-          console.log("login successful2")
         })
         .catch((error) => {
           this.errorMessage =
@@ -395,5 +393,19 @@ label{
 .image-container img {
   width: 100%;
   border-radius: 1.25rem;
+}
+@media (max-width: 1214px) {
+  .left {
+    display: none !important;
+  }
+  .right{
+    min-width: 100% !important;
+  }
+  .row{
+    width: 100vw;
+  }
+  .login-register-container{
+    width: 100% !important;
+  }
 }
 </style>

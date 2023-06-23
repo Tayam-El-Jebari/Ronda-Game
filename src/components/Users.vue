@@ -89,6 +89,6 @@ export default {
 <style scoped>
 .table {
     padding-top: 150px;
-    min-width: 90vw;
+    min-width: 99vw;
 }
 </style>

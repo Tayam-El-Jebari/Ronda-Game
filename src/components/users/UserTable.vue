@@ -13,6 +13,7 @@
                     <th scope="col">Wins Against CPU</th>
                     <th scope="col">Losses Against CPU</th>
                     <th scope="col">Ties Against CPU</th>
+                    <th scope="col">Buttons</th>
                 </tr>
             </thead>
             <tbody>

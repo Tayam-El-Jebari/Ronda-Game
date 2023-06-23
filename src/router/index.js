@@ -35,7 +35,7 @@ router.beforeEach(async (to, from, next) => {
         sendToLogin(store, next);
       }
       else{
-        const response = await axios.get("http://localhost:80/users/authenticate", {
+        const response = await axios.get("http://localhost:80/auth/", {
           headers: {
             'Authorization': `Bearer ${store.getJwt}`,
           }

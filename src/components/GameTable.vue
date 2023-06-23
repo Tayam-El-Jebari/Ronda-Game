@@ -18,7 +18,8 @@
             </div>
             <transition-group name="card-fly-in" tag="div" class="card-fly-in-container">
                 <Player v-for="( player, index ) in  players " :key="index" :player="player" :playerIndex="index"
-                    @card-dragged="handleCardDragged" @card-clicked="handleCardClicked" />
+                    :isOpposingPlayer="setOpposingPlayer(player.name)" @card-dragged="handleCardDragged"
+                   />
             </transition-group>
             <p>Center Board:</p>
             <div class="center-cards rounded-5" @dragover.prevent @drop="handleDrop">
@@ -27,6 +28,8 @@
                         @card-clicked="captureCardHigherRank" />
                 </transition-group>
             </div>
+            <p class="disclaimer"><small>*click and drag cards from your hand to center to place cards<br>
+                    *click on cards in center to capture those of a higher rank, as long as it is in sequence</small></p>
             <button @click="endTurn" v-if="gameStarted" class="end-turn-button btn btn-primary mb-5">End Turn</button>
             <div v-if="isLoading">
                 Loading...
@@ -49,6 +52,7 @@ import Card from './Card.vue';
 import Player from './Player.vue';
 import { useUserAuthStore } from "@/stores/authstore";
 
+//only cards used for playing ronda. 40 cards, 4 suits, 10 cards per suit
 const spanishDeck = [
     '2S', '3S', '4S', '5S', '6S', '7S', '0S', 'AS', 'JS', 'QS',
     '2D', '3D', '4D', '5D', '6D', '7D', '0D', 'AD', 'JD', 'QD',
@@ -56,8 +60,12 @@ const spanishDeck = [
     '2H', '3H', '4H', '5H', '6H', '7H', '0H', 'AH', 'JH', 'QH',
 ];
 const DECK_API = 'https://deckofcardsapi.com/api/deck';
-const minAmountOfClicksCPU = 0;
-const maxAmountOfClicksCPU = 3;
+
+//could have, change the difficulty of the cpu.
+//done by changing the min and max amount of random clicks the cpu can make
+//higher difficulty = higher amount of clicks = everything that is possible to be cleared on the board will be cleared each turn. CPU won't miss out.
+const minAmountOfClicksCPU = 1;
+const maxAmountOfClicksCPU = 6;
 
 
 
@@ -72,20 +80,22 @@ export default {
         }
     },
     created() {
-        const authStore = useUserAuthStore();
-        this.players[0].name = authStore.getUsername;
         //could have: save game state to server, load from server
         this.loadGameState();
+        console.log(this.players);
     },
     data() {
         return {
             isLoading: false,
             deckId: '',
+            //array here. Mainly done so the project can be easily scaled up by introducing more players into the game
             players: [] = [
+                //could be seen as 'gameslots', see claimGameSlot() for more info
                 { name: 'Player 1', cards: [], capturedCards: [] },
                 { name: 'CPU', cards: [], capturedCards: [] },
             ],
             centerCards: [],
+            dealingCards: false,
             currentPlayerIndex: 0,
             //used for keeping trying to keep track of being able to capture a card of higher rank
             lastCapturedCard: '',
@@ -104,6 +114,7 @@ export default {
     },
     methods: {
         async startGame() {
+            //loading added as creating a deck and dealing cards takes a while, as multiple conditions have to be met to deal cards on center
             this.isLoading = true;
             await this.resetGame();
             await this.createDeck();
@@ -138,6 +149,13 @@ export default {
             await axios.get(`${DECK_API}/${this.deckId}/shuffle/?remaining=true`);
         },
         async dealCards() {
+            //done because loops and setTimeout (from CPU turn) don't work well together, if at all from debugging i noticed
+            //this will make sure that the cards are dealt only once to all players, alternatively, could have changed the logic of cpu turn to not use loops
+            if (this.dealingCards == true) {
+                return;
+            }
+            this.dealingCards = true;
+
             let response = null;
             for (let player of this.players) {
                 response = await axios.get(`${DECK_API}/${this.deckId}/draw/?count=3`);
@@ -147,11 +165,11 @@ export default {
                     this.applyRondaLogic(player);
                 }
             }
+            this.dealingCards = false;
             this.remainingCards = response.data.remaining;
         },
         async dealCenterCards() {
             let isValid = false;
-
             while (!isValid) {
                 let response = await axios.get(`${DECK_API}/${this.deckId}/draw/?count=4`);
                 let cards = response.data.cards;
@@ -167,7 +185,24 @@ export default {
                 }
             }
         },
+        setOpposingPlayer($username) {
+            //not best solution, but needed to assign current player to the correct slot
+            let currentLoggedInUsername = this.claimGameSlot();
+            if (currentLoggedInUsername === $username) {
+                return false;
+            }
+            return true;
+        },
+        claimGameSlot() {
+            const authStore = useUserAuthStore();
+            //FOR MULTIPLAYER:
+            //this would need to be changed to seeing which 'slot' is available, 
+            //looping through the currently logged in users, and if it is available, set it to that slot
+            this.players[0].name = authStore.getUsername;
+            return this.players[0].name
+        },
         saveGameState() {
+            //only called upon when ending your turn.
             const gameState = {
                 deckId: this.deckId,
                 players: this.players,
@@ -303,14 +338,14 @@ export default {
             } while (targetPlayerIndex !== currentPlayerIndex);
             return false;
         },
-        nextTurn() {
+        async nextTurn() {
             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
             if (this.players[this.currentPlayerIndex].name === 'CPU') {
                 this.cpuTurn();
             }
             //checks if player 1 is out of cards, if so, then give 3 cards to each player
             if (this.currentPlayerIndex === 0 && this.players[this.currentPlayerIndex].cards.length === 0) {
-                this.dealCards();
+                await this.dealCards();
                 this.checkForWinner();
             }
         },
@@ -322,10 +357,10 @@ export default {
             // Randomly 'clicks' on center cards to see if it can capture anything; only works if there is no missa
             if (this.centerCards.length > 0) {
                 const randomAmountOfClicks = Math.floor(Math.random() * (maxAmountOfClicksCPU - minAmountOfClicksCPU)) + minAmountOfClicksCPU;
-
+                //random delay for making it seem more human
                 for (let i = 0; i < randomAmountOfClicks; i++) {
-                    const minDelay = 500;
-                    const maxDelay = 1500;
+                    const minDelay = 100;
+                    const maxDelay = 500;
                     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay)) + minDelay;
 
                     // Wait for the random delay before executing the capture logic
@@ -335,7 +370,7 @@ export default {
                     this.captureCardHigherRank(this.centerCards[randomCardIndex]);
                 }
             }
-
+            //end turn of cpu
             this.endTurn();
         },
         removeCardFromCenter(cardToRemove) {
@@ -346,6 +381,7 @@ export default {
             return this.centerCards.filter(centerCard => centerCard.value === card.value);
         },
         endTurn() {
+            //checks if user or cpu can end turn
             if (this.canEndTurn(this.players[this.currentPlayerIndex])) {
                 this.nextTurn();
                 this.lastCapturedCard = '';
@@ -355,7 +391,8 @@ export default {
             }
         },
         checkForWinner() {
-            if (this.remainingCards === 0) {
+            const noCardsInHands = this.players.every(player => player.cards && player.cards.length === 3);
+            if (this.remainingCards === 0 && noCardsInHands) {
                 let maxCapturedCards = -1;
                 let winners = [];
 
@@ -363,11 +400,7 @@ export default {
                     const lastCapturingPlayer = this.players[this.currentPlayerIndex];
                     lastCapturingPlayer.capturedCards.push(...this.centerCards);
                 }
-                let lastCapturingPlayer = this.getLastCapturingPlayer();
-                if (lastCapturingPlayer) {
-                    lastCapturingPlayer.capturedCards.push(...this.centerCards);
-                }
-
+                this.giveLastCapturingPlayerCenterCards();
                 for (const player of this.players) {
                     if (player.capturedCards.length > maxCapturedCards) {
                         maxCapturedCards = player.capturedCards.length;
@@ -376,7 +409,6 @@ export default {
                         winners.push(player);
                     }
                 }
-
                 if (winners.length === 1) {
                     this.winner = winners[0].name;
                 } else {
@@ -384,6 +416,37 @@ export default {
                 }
                 localStorage.removeItem('gameState');
                 this.gameStarted = false;
+                this.updateStatistics();
+            }
+        },
+        updateStatistics() {
+            const authStore = useUserAuthStore();
+
+            let endpoint;
+            if (this.winner === 'Tie') {
+                endpoint = '/users/addTie';
+            } else if (this.winner === authStore.getUsername) {
+                endpoint = '/users/addWin';
+            } else {
+                endpoint = '/users/addLoss';
+            }
+
+            try {
+                const response = axios.post(`http://localhost:80${endpoint}`, null, {
+                    headers: {
+                        'Authorization': `Bearer ${authStore.getJwt}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        giveLastCapturingPlayerCenterCards() {
+            //if someone captured a card in the last turn, give them all the center cards
+            let lastCapturingPlayer = this.getLastCapturingPlayer();
+            if (lastCapturingPlayer) {
+                lastCapturingPlayer.capturedCards.push(...this.centerCards);
             }
         },
         getLastCapturingPlayer() {
@@ -515,6 +578,12 @@ body {
     animation-delay: calc(.1s * var(--i));
 }
 
+.disclaimer {
+    font-size: 14px;
+    color: #262626;
+    text-align: left;
+}
+
 @keyframes cardFlyIn {
     0% {
         transform: translateY(-100%);
@@ -544,4 +613,15 @@ body {
         opacity: 1;
     }
 }
-</style>
+
+@media (max-width: 676px) {
+    .center-cards {
+        min-width: auto;
+    }
+
+    .disclaimer {
+        font-size: 11px;
+        color: #262626;
+        text-align: left;
+    }
+}</style>
