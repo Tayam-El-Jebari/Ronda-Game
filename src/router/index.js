@@ -26,6 +26,7 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
+  document.title = 'Ronda Game';
   const store = useUserAuthStore();
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
