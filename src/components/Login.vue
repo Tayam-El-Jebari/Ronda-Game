@@ -328,7 +328,7 @@ export default {
 }
 
 .right {
-  height: 100%;
+  height: 100% !important;
   background: #5f90ac 100%;
   box-shadow: 0px 0px 40px 20px rgba(0, 0, 0, 0.23);
   border-bottom-right-radius: 20px;
